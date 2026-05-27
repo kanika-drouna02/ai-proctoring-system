@@ -1,3 +1,7 @@
+import sys
+sys.path.append('.')
+from backend.utils.event_logger import EventLogger
+
 import cv2
 import time
 import numpy as np
@@ -5,6 +9,7 @@ import sounddevice as sd
 from ultralytics import YOLO
 from queue import Queue
 from threading import Thread
+
 
 # ── SETTINGS ──
 SAMPLE_RATE = 16000
@@ -25,6 +30,7 @@ CYAN = (255, 255, 0)
 
 # ── SHARED STATE ──
 alert_queue = Queue()
+logger = EventLogger()
 events = []
 start_time = time.time()
 
@@ -206,6 +212,7 @@ while True:
             alert_type = 'FACE_RETURNED'
             severity = 'LOW'
         events.append({'type': alert_type, 'time': time.strftime('%H:%M:%S'), 'severity': severity})
+        logger.log_event(alert_type, severity=severity)
         print(f"[{time.strftime('%H:%M:%S')}] {alert_type}")
         last_face_alert = current_time
     prev_face_count = face_count
@@ -299,6 +306,10 @@ while True:
         draw_alert_banner(frame, 'WARNING: Phone briefly detected!', ORANGE)
 
     cv2.imshow('AI Proctoring System', frame)
+
+    summary = logger.end_session()
+    print(f"Session duration: {summary['duration_human']}")
+    print(f"Total alerts: {summary['total_events']}")
 
     if cv2.waitKey(1) == ord('q'):
         print("\n\n--- FINAL SESSION SUMMARY ---")
