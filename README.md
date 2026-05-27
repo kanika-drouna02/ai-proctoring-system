@@ -24,14 +24,14 @@ Built as project .
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Face & Gaze | MediaPipe |
-| Object Detection | YOLOv8 |
-| Audio Analysis | WebRTC VAD |
-| Backend API | FastAPI + SQLite |
-| Frontend | React + Vite |
-| Deployment | Render + Vercel |
+|       Layer      |    Technology    |
+|------------------|------------------|
+| Face & Gaze      | MediaPipe        |
+| Object Detection | YOLOv8           |
+| Audio Analysis   | WebRTC VAD       |
+| Backend API      | FastAPI + SQLite |
+| Frontend         | React + Vite     |
+| Deployment       | Render + Vercel  |
 
 ---
 
@@ -70,8 +70,23 @@ uvicorn backend.api.main:app --reload
 
 ---
 
+## ✅ Progress
+
+### Week 1 — Complete ✅
+- Face detection with OpenCV
+- Gaze detection with eye tracking
+- Multi-face and no-face alerts
+
+### Week 2 — Complete ✅
+- Phone detection with YOLOv8
+- Voice activity detection
+- All 4 detectors running simultaneously
+- Event logger saving to JSONL
+- UI with status panel and corner brackets
+
+
 ## 📸 Screenshots
-> Will be added as project progresses
+![Demo](docs/screenshots/week1.png)
 
 ---
 
