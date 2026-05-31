@@ -1,8 +1,34 @@
 from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import time
 from datetime import datetime
+
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        print(f"✅ Client connected! Total: {len(self.active_connections)}")
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        print(f"❌ Client disconnected! Total: {len(self.active_connections)}")
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass
+
+manager = ConnectionManager()
+
 
 app = FastAPI(
     title="AI Proctoring System",
@@ -148,3 +174,50 @@ def get_summary(session_id: str):
         "counts_by_type": counts,
         "counts_by_severity": severity_counts
     }
+
+# ── WEBSOCKET ──
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(websocket: WebSocket, session_id: str):
+    await manager.connect(websocket)
+    try:
+        # Keep connection alive
+        while True:
+            # Wait for any message from client
+            data = await websocket.receive_text()
+            # Echo back as confirmation
+            await websocket.send_json({
+                "status": "received",
+                "data": data
+            })
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
+# ── BROADCAST ALERT VIA WEBSOCKET ──
+@app.post("/session/{session_id}/broadcast")
+async def broadcast_alert(session_id: str, alert_type: str, severity: str = "MEDIUM"):
+    if session_id not in sessions:
+        sessions[session_id] = {
+            "session_id": session_id,
+            "student_name": "Test",
+            "start_time": time.time(),
+            "start_time_human": datetime.now().isoformat(),
+            "status": "active",
+            "events": []
+        }
+
+    event = {
+        "id": str(uuid.uuid4()),
+        "type": alert_type,
+        "severity": severity,
+        "timestamp": time.time(),
+        "timestamp_human": datetime.now().strftime("%H:%M:%S"),
+        "session_id": session_id
+    }
+
+    # Save to session
+    sessions[session_id]["events"].append(event)
+
+    # Broadcast to all connected clients
+    await manager.broadcast(event)
+
+    return {"status": "broadcasted", "event": event}
