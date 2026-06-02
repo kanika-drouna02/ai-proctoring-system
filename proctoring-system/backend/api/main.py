@@ -5,6 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import time
 from datetime import datetime
+from backend.utils.database import (
+    create_session as db_create_session,
+    end_session as db_end_session,
+    log_event as db_log_event,
+    get_events as db_get_events,
+    get_all_sessions as db_get_all_sessions,
+    get_session_summary as db_get_session_summary
+)
 
 
 class ConnectionManager:
@@ -59,20 +67,18 @@ def health():
 # ── START SESSION ──
 @app.post("/session/start")
 def start_session(student_name: str = "Student"):
-    session_id = str(uuid.uuid4())
+    session_id = db_create_session(student_name)
     sessions[session_id] = {
         "session_id": session_id,
         "student_name": student_name,
         "start_time": time.time(),
-        "start_time_human": datetime.now().isoformat(),
         "status": "active",
         "events": []
     }
     return {
         "session_id": session_id,
         "student_name": student_name,
-        "status": "started",
-        "message": "Session started successfully"
+        "status": "started"
     }
 
 # ── STOP SESSION ──
@@ -99,9 +105,7 @@ def stop_session(session_id: str):
 # ── LOG AN ALERT ──
 @app.post("/session/{session_id}/alert")
 def log_alert(session_id: str, alert_type: str, severity: str = "MEDIUM"):
-    if session_id not in sessions:
-        return {"error": "Session not found"}
-
+    db_log_event(session_id, alert_type, severity)
     event = {
         "id": str(uuid.uuid4()),
         "type": alert_type,
@@ -109,24 +113,18 @@ def log_alert(session_id: str, alert_type: str, severity: str = "MEDIUM"):
         "timestamp": time.time(),
         "timestamp_human": datetime.now().strftime("%H:%M:%S")
     }
-
-    sessions[session_id]["events"].append(event)
-
-    return {
-        "status": "logged",
-        "event": event
-    }
+    if session_id in sessions:
+        sessions[session_id]["events"].append(event)
+    return {"status": "logged", "event": event}
 
 # ── GET ALL ALERTS ──
 @app.get("/session/{session_id}/alerts")
 def get_alerts(session_id: str):
-    if session_id not in sessions:
-        return {"error": "Session not found"}
-
+    events = db_get_events(session_id)
     return {
         "session_id": session_id,
-        "total": len(sessions[session_id]["events"]),
-        "events": sessions[session_id]["events"]
+        "total": len(events),
+        "events": events
     }
 
 # ── GET ALL SESSIONS ──
