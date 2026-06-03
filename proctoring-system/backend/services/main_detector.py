@@ -2,6 +2,7 @@ import sys
 sys.path.append('.')
 from backend.utils.event_logger import EventLogger
 
+import requests
 import cv2
 import time
 import numpy as np
@@ -33,6 +34,34 @@ alert_queue = Queue()
 logger = EventLogger()
 events = []
 start_time = time.time()
+
+
+# ── API CONNECTION ──
+API_URL = "http://localhost:8000"
+SESSION_ID = None
+
+def start_api_session(student_name="Student"):
+    global SESSION_ID
+    try:
+        res = requests.post(f"{API_URL}/session/start?student_name={student_name}")
+        data = res.json()
+        SESSION_ID = data["session_id"]
+        print(f"✅ API Session started: {SESSION_ID[:8]}...")
+    except Exception as e:
+        print(f"⚠️ Could not connect to API: {e}")
+        print("Running in offline mode - alerts won't show on dashboard")
+
+def send_alert_to_dashboard(alert_type, severity="MEDIUM"):
+    if SESSION_ID is None:
+        return
+    try:
+        requests.post(
+            f"{API_URL}/session/{SESSION_ID}/broadcast",
+            params={"alert_type": alert_type, "severity": severity},
+            timeout=1
+        )
+    except:
+        pass
 
 # ── AUDIO THREAD ──
 speech_frames = 0
@@ -174,6 +203,7 @@ phone_alert_level = 'CLEAR'
 audio_alert_active = False
 audio_alert_timer = 0
 
+start_api_session("Kanika")
 print("✅ Camera started! Press Q to quit\n")
 
 while True:
@@ -214,6 +244,7 @@ while True:
         events.append({'type': alert_type, 'time': time.strftime('%H:%M:%S'), 'severity': severity})
         logger.log_event(alert_type, severity=severity)
         print(f"[{time.strftime('%H:%M:%S')}] {alert_type}")
+        send_alert_to_dashboard(alert_type, severity)
         last_face_alert = current_time
     prev_face_count = face_count
 
@@ -228,6 +259,7 @@ while True:
     if not gaze_ok and current_time - last_gaze_alert > COOLDOWN:
         events.append({'type': 'LOOKING_AWAY', 'time': time.strftime('%H:%M:%S'), 'severity': 'MEDIUM'})
         print(f"[{time.strftime('%H:%M:%S')}] LOOKING_AWAY")
+        send_alert_to_dashboard('LOOKING_AWAY', 'MEDIUM')
         last_gaze_alert = current_time
 
     # ── PHONE DETECTION ──
@@ -254,12 +286,14 @@ while True:
                 phone_alert_level = 'SUSTAINED'
                 events.append({'type': 'PHONE_SUSTAINED', 'time': time.strftime('%H:%M:%S'), 'severity': 'HIGH'})
                 print(f"[{time.strftime('%H:%M:%S')}] PHONE_SUSTAINED")
+                send_alert_to_dashboard('PHONE_SUSTAINED', 'HIGH')
                 last_phone_alert = current_time
         elif phone_frame_count >= 10 and phone_alert_level is None:
             if current_time - last_phone_alert > COOLDOWN:
                 phone_alert_level = 'SEEN'
                 events.append({'type': 'PHONE_SEEN', 'time': time.strftime('%H:%M:%S'), 'severity': 'MEDIUM'})
                 print(f"[{time.strftime('%H:%M:%S')}] PHONE_SEEN")
+                send_alert_to_dashboard('PHONE_SEEN', 'MEDIUM')
                 last_phone_alert = current_time
     else:
         phone_frame_count = max(0, phone_frame_count - 2)
