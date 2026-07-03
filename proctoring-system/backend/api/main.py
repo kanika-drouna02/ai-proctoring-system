@@ -212,6 +212,7 @@ async def broadcast_alert(session_id: str, alert_type: str, severity: str = "MED
         "session_id": session_id
     }
 
+
     # Save to session
     sessions[session_id]["events"].append(event)
 
@@ -219,3 +220,24 @@ async def broadcast_alert(session_id: str, alert_type: str, severity: str = "MED
     await manager.broadcast(event)
 
     return {"status": "broadcasted", "event": event}
+# ── PRIVACY INFO ──
+@app.get("/privacy")
+async def privacy_info():
+    return {
+        "policy": "Privacy First",
+        "raw_video_stored": False,
+        "raw_audio_stored": False,
+        "data_collected": [
+            "Alert type",
+            "Alert timestamp",
+            "Alert severity",
+            "Session duration"
+        ],
+        "data_NOT_collected": [
+            "Raw video frames",
+            "Raw audio recordings",
+            "Facial images",
+            "Voice recordings"
+        ],
+        "message": "Only behavioral metadata is stored. Zero raw biometric data."
+    }

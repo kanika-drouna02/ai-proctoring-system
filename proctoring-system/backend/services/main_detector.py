@@ -204,6 +204,7 @@ audio_alert_active = False
 audio_alert_timer = 0
 
 start_api_session("Kanika")
+print(f"🔗 Open dashboard and connect to session: {SESSION_ID}")
 print("✅ Camera started! Press Q to quit\n")
 
 while True:
@@ -305,6 +306,7 @@ while True:
         audio_event = alert_queue.get()
         events.append(audio_event)
         print(f"[{audio_event['time']}] {audio_event['type']}")
+        send_alert_to_dashboard(audio_event['type'], audio_event['severity'])
         audio_alert_active = True
         audio_alert_timer = current_time
 
@@ -338,6 +340,10 @@ while True:
         draw_alert_banner(frame, 'WARNING: Looking away from screen!', ORANGE)
     elif phone_alert_level == 'SEEN':
         draw_alert_banner(frame, 'WARNING: Phone briefly detected!', ORANGE)
+
+    processed_frame = frame.copy()
+    del frame
+    frame = processed_frame
 
     cv2.imshow('AI Proctoring System', frame)
 

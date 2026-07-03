@@ -1,10 +1,15 @@
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, 
-  ResponsiveContainer, PieChart, Pie, Cell,
-  LineChart, Line
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
 } from "recharts"
 
-export default function AlertSummary({ alerts }) {
+export default function AlertSummary({ alerts, colors, isDark }) {
   // Count by type
   const counts = alerts.reduce((acc, alert) => {
     acc[alert.type] = (acc[alert.type] || 0) + 1
@@ -12,124 +17,194 @@ export default function AlertSummary({ alerts }) {
   }, {})
 
   const chartData = Object.entries(counts).map(([type, count]) => ({
-    type: type.replace(/_/g, " ").slice(0, 10),
-    count
+    type: type.replace(/\_/g, " ").slice(0, 10),
+    count,
   }))
 
   // Severity counts
-  const highCount = alerts.filter(a => a.severity === "HIGH").length
-  const mediumCount = alerts.filter(a => a.severity === "MEDIUM").length
-  const lowCount = alerts.filter(a => a.severity === "LOW").length
+  const highCount = alerts.filter((a) => a.severity === "HIGH").length
+  const mediumCount = alerts.filter((a) => a.severity === "MEDIUM").length
+  const lowCount = alerts.filter((a) => a.severity === "LOW").length
 
   // Severity score
-  const severityScore = (highCount * 3) + (mediumCount * 2) + (lowCount * 1)
+  const severityScore = highCount * 3 + mediumCount * 2 + lowCount
   const maxScore = alerts.length * 3 || 1
   const riskPercent = Math.min((severityScore / maxScore) * 100, 100)
-  const riskColor = riskPercent > 60 ? "#FF4444" : riskPercent > 30 ? "#FF6B35" : "#00FFB2"
-  const riskLabel = riskPercent > 60 ? "HIGH RISK" : riskPercent > 30 ? "MEDIUM RISK" : "LOW RISK"
 
-  // Pie chart data
-  const pieData = [
-    { name: "HIGH", value: highCount || 0, color: "#FF4444" },
-    { name: "MEDIUM", value: mediumCount || 0, color: "#FF6B35" },
-    { name: "LOW", value: lowCount || 0, color: "#FFD700" }
-  ].filter(d => d.value > 0)
+  const riskColor =
+    riskPercent > 60
+      ? "#EF4444"
+      : riskPercent > 30
+      ? "#F59E0B"
+      : colors.primary
+
+  const riskLabel =
+    riskPercent > 60
+      ? "HIGH RISK"
+      : riskPercent > 30
+      ? "MEDIUM RISK"
+      : "LOW RISK"
 
   // Timeline — alerts per minute
-  const timelineData = alerts.reduce((acc, alert) => {
-    const minute = alert.timestamp_human?.slice(0, 5) || "00:00"
-    const existing = acc.find(d => d.time === minute)
-    if (existing) existing.count++
-    else acc.push({ time: minute, count: 1 })
-    return acc
-  }, []).slice(-10)
+  const timelineData = alerts
+    .reduce((acc, alert) => {
+      const minute = alert.timestamp_human?.slice(0, 5) || "00:00"
+
+      const existing = acc.find((d) => d.time === minute)
+
+      if (existing) existing.count++
+      else acc.push({ time: minute, count: 1 })
+
+      return acc
+    }, [])
+    .slice(-10)
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 18,
+      }}
+    >
       {/* Risk Meter */}
-      <div style={{
-        background: "#0D0D1A",
-        border: `1px solid ${riskColor}30`,
-        borderRadius: 12,
-        padding: 20
-      }}>
-        <div style={{
-          fontSize: 11, color: "#555",
-          letterSpacing: 3, textTransform: "uppercase", marginBottom: 12
-        }}>
+      <div
+        style={{
+          background: colors.accentBg,
+          border: `1px solid ${colors.accentBorder}`,
+          borderRadius: 16,
+          padding: 20,
+          boxShadow: colors.shadow,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            color: colors.primary,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+            marginBottom: 14,
+            fontWeight: 700,
+          }}
+        >
           Exam Integrity Score
         </div>
 
-        {/* Risk bar */}
-        <div style={{
-          background: "#1E1E2E",
-          borderRadius: 8,
-          height: 12,
-          marginBottom: 10,
-          overflow: "hidden"
-        }}>
-          <div style={{
-            width: `${riskPercent}%`,
-            height: "100%",
-            background: riskColor,
-            borderRadius: 8,
-            transition: "all 0.5s ease"
-          }} />
+        <div
+          style={{
+            background: isDark ? "#0A0A14" : "#D1FAE5",
+            borderRadius: 10,
+            height: 12,
+            marginBottom: 12,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${riskPercent}%`,
+              height: "100%",
+              background: riskColor,
+              borderRadius: 10,
+              transition: "0.5s",
+            }}
+          />
         </div>
 
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
-          <span style={{ fontSize: 13, color: riskColor, fontWeight: 700 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 13,
+              color: riskColor,
+              fontWeight: 700,
+            }}
+          >
             {riskLabel}
           </span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: riskColor }}>
+
+          <span
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: riskColor,
+            }}
+          >
             {Math.round(riskPercent)}%
           </span>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div style={{
-        background: "#0D0D1A",
-        border: "1px solid #1E1E2E",
-        borderRadius: 12,
-        padding: 20
-      }}>
-        <div style={{
-          fontSize: 11, color: "#555",
-          letterSpacing: 3, textTransform: "uppercase", marginBottom: 12
-        }}>
+      {/* Stats */}
+      <div
+        style={{
+          background: colors.accentBg,
+          border: `1px solid ${colors.accentBorder}`,
+          borderRadius: 16,
+          padding: 20,
+          boxShadow: colors.shadow,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            color: colors.primary,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+            marginBottom: 14,
+            fontWeight: 700,
+          }}
+        >
           Alert Breakdown
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          gap: 10
-        }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4,1fr)",
+            gap: 10,
+          }}
+        >
           {[
-            { label: "Total", value: alerts.length, color: "#E8E8F0" },
-            { label: "High", value: highCount, color: "#FF4444" },
-            { label: "Medium", value: mediumCount, color: "#FF6B35" },
+            { label: "Total", value: alerts.length, color: colors.textMain },
+            { label: "High", value: highCount, color: "#EF4444" },
+            { label: "Medium", value: mediumCount, color: "#F59E0B" },
             { label: "Score", value: severityScore, color: riskColor },
           ].map((item, i) => (
-            <div key={i} style={{
-              background: "#13131F",
-              borderRadius: 8,
-              padding: "10px 8px",
-              textAlign: "center"
-            }}>
-              <div style={{
-                fontSize: 22, fontWeight: 700,
-                color: item.color
-              }}>
+            <div
+              key={i}
+              style={{
+                background: isDark ? "#1A1A2E" : "#FFFFFF",
+                border: `1px solid ${colors.border}`,
+                borderRadius: 12,
+                padding: "12px 8px",
+                textAlign: "center",
+                boxShadow: isDark
+                  ? "none"
+                  : "0 3px 12px rgba(16,185,129,0.08)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 800,
+                  color: item.color,
+                }}
+              >
                 {item.value}
               </div>
-              <div style={{ fontSize: 10, color: "#555", marginTop: 3 }}>
+
+              <div
+                style={{
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  marginTop: 4,
+                }}
+              >
                 {item.label}
               </div>
             </div>
@@ -137,79 +212,168 @@ export default function AlertSummary({ alerts }) {
         </div>
       </div>
 
-      {/* Bar Chart */}
-      <div style={{
-        background: "#0D0D1A",
-        border: "1px solid #1E1E2E",
-        borderRadius: 12,
-        padding: 20
-      }}>
-        <div style={{
-          fontSize: 11, color: "#555",
-          letterSpacing: 3, textTransform: "uppercase", marginBottom: 12
-        }}>
+            {/* Bar Chart */}
+      <div
+        style={{
+          background: colors.accentBg,
+          border: `1px solid ${colors.accentBorder}`,
+          borderRadius: 16,
+          padding: 20,
+          boxShadow: colors.shadow,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            color: colors.primary,
+            letterSpacing: 3,
+            textTransform: "uppercase",
+            marginBottom: 14,
+            fontWeight: 700,
+          }}
+        >
           Alerts by Type
         </div>
 
         {chartData.length === 0 ? (
-          <div style={{
-            display: "flex", alignItems: "center",
-            justifyContent: "center", height: 150,
-            color: "#333", fontSize: 14
-          }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 150,
+              color: colors.textMuted,
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
             No data yet
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={190}>
             <BarChart data={chartData}>
-              <XAxis dataKey="type" tick={{ fill: "#555", fontSize: 9 }} />
-              <YAxis tick={{ fill: "#555", fontSize: 9 }} />
-              <Tooltip contentStyle={{
-                background: "#13131F",
-                border: "1px solid #1E1E2E",
-                borderRadius: 8, color: "#E8E8F0"
-              }} />
-              <Bar dataKey="count" fill="#00FFB2" radius={[4, 4, 0, 0]} />
+              <XAxis
+                dataKey="type"
+                tick={{
+                  fill: colors.textMuted,
+                  fontSize: 10,
+                }}
+                axisLine={{ stroke: colors.border }}
+                tickLine={{ stroke: colors.border }}
+              />
+
+              <YAxis
+                tick={{
+                  fill: colors.textMuted,
+                  fontSize: 10,
+                }}
+                axisLine={{ stroke: colors.border }}
+                tickLine={{ stroke: colors.border }}
+              />
+
+              <Tooltip
+                contentStyle={{
+                  background: colors.cardBg,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 12,
+                  color: colors.textMain,
+                  boxShadow: colors.shadow,
+                }}
+                labelStyle={{
+                  color: colors.textMain,
+                  fontWeight: 700,
+                }}
+              />
+
+              <Bar
+                dataKey="count"
+                fill={colors.primary}
+                radius={[8, 8, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      {/* Timeline Chart */}
+      {/* Timeline */}
       {timelineData.length > 1 && (
-        <div style={{
-          background: "#0D0D1A",
-          border: "1px solid #1E1E2E",
-          borderRadius: 12,
-          padding: 20
-        }}>
-          <div style={{
-            fontSize: 11, color: "#555",
-            letterSpacing: 3, textTransform: "uppercase", marginBottom: 12
-          }}>
+        <div
+          style={{
+            background: colors.accentBg,
+            border: `1px solid ${colors.accentBorder}`,
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: colors.shadow,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: colors.primary,
+              letterSpacing: 3,
+              textTransform: "uppercase",
+              marginBottom: 14,
+              fontWeight: 700,
+            }}
+          >
             Alert Timeline
           </div>
-          <ResponsiveContainer width="100%" height={150}>
+
+          <ResponsiveContainer width="100%" height={170}>
             <LineChart data={timelineData}>
-              <XAxis dataKey="time" tick={{ fill: "#555", fontSize: 9 }} />
-              <YAxis tick={{ fill: "#555", fontSize: 9 }} />
-              <Tooltip contentStyle={{
-                background: "#13131F",
-                border: "1px solid #1E1E2E",
-                borderRadius: 8, color: "#E8E8F0"
-              }} />
+              <XAxis
+                dataKey="time"
+                tick={{
+                  fill: colors.textMuted,
+                  fontSize: 10,
+                }}
+                axisLine={{ stroke: colors.border }}
+                tickLine={{ stroke: colors.border }}
+              />
+
+              <YAxis
+                tick={{
+                  fill: colors.textMuted,
+                  fontSize: 10,
+                }}
+                axisLine={{ stroke: colors.border }}
+                tickLine={{ stroke: colors.border }}
+              />
+
+              <Tooltip
+                contentStyle={{
+                  background: colors.cardBg,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 12,
+                  color: colors.textMain,
+                  boxShadow: colors.shadow,
+                }}
+                labelStyle={{
+                  color: colors.textMain,
+                  fontWeight: 700,
+                }}
+              />
+
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="#FF6B35"
-                strokeWidth={2}
-                dot={{ fill: "#FF6B35", r: 4 }}
+                stroke={colors.primary}
+                strokeWidth={3}
+                dot={{
+                  fill: colors.primary,
+                  stroke: colors.cardBg,
+                  strokeWidth: 2,
+                  r: 5,
+                }}
+                activeDot={{
+                  r: 7,
+                  fill: colors.primary,
+                }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
-
     </div>
   )
 }
