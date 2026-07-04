@@ -86,11 +86,14 @@ uvicorn backend.api.main:app --reload
 
 
 ## 📸 Screenshots
-![Demo](docs/screenshots/week1.png)
+![Demo][def]
 
-![Dashborad till week 3](docs/screenshots/dashboard.png)
+![Dashborad till week 3](proctoring-system/docs/screenshots/dashboard.png)
 
 ---
 
 ## 👩‍💻 Author
 **Kanika** — NIT Patna, CSE
+
+
+[def]: proctoring-system/docs/screenshots/week1.png
