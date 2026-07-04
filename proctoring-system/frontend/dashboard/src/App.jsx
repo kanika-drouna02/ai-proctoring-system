@@ -74,6 +74,14 @@ export default function App() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
   }, [sessionActive, sessionId])
 
+
+  // Read session ID from URL automatically
+  useEffect(() => {
+      const params = new URLSearchParams(window.location.search)
+      const sid = params.get("session")
+      if (sid) setManualSessionId(sid)
+  }, [])
+
   // --- COMPREHENSIVE THEME MAPPING ---
   const isDark = theme === "dark"
   const colors = {

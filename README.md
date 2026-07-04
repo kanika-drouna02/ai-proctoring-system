@@ -88,6 +88,8 @@ uvicorn backend.api.main:app --reload
 ## 📸 Screenshots
 ![Demo](docs/screenshots/week1.png)
 
+![Dashborad till week 3](docs/screenshots/dashboard.png)
+
 ---
 
 ## 👩‍💻 Author

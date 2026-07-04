@@ -204,7 +204,10 @@ audio_alert_active = False
 audio_alert_timer = 0
 
 start_api_session("Kanika")
-print(f"🔗 Open dashboard and connect to session: {SESSION_ID}")
+import webbrowser
+dashboard_url = f"http://localhost:5173?session={SESSION_ID}"
+print(f"🔗 Opening dashboard: {dashboard_url}")
+webbrowser.open(dashboard_url)
 print("✅ Camera started! Press Q to quit\n")
 
 while True:
