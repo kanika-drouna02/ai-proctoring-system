@@ -8,7 +8,7 @@ Built as project .
 ---
 
 ## 🚀 Live Demo
-> Coming soon — will be updated after deployment
+Backend API: https://ai-proctoring-system-qpmj.onrender.com/docs
 
 ---
 
