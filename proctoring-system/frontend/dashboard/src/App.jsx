@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import AlertFeed from "./components/AlertFeed"
 import StatusBar from "./components/StatusBar"
 import AlertSummary from "./components/AlertSummary"
+import BrowserDetector from "./components/BrowserDetector"
 
 const API_URL = "https://ai-proctoring-system-qpmj.onrender.com"
 
@@ -313,25 +314,36 @@ export default function App() {
           </div>
 
           {/* Grid Layout - Components now sit in themed containers */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 32 }}>
-            <div style={{ 
-                background: colors.cardBg, borderRadius: 28, padding: 28, 
-                border: `1px solid ${colors.border}`, boxShadow: colors.shadow, minHeight: 600
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 32 }}>
+  
+  {/* Camera Feed */}
+  <BrowserDetector
+    sessionId={manualSessionId || sessionId}
+    apiUrl={API_URL}
+    onAlert={(alert) => setAlerts(prev => [alert, ...prev].slice(0, 100))}
+    colors={colors}
+  />
+
+  {/* Alert Feed */}
+          <div style={{ 
+              background: colors.cardBg, borderRadius: 28, padding: 28, 
+              border: `1px solid ${colors.border}`, boxShadow: colors.shadow, minHeight: 600
             }}>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ color: colors.primary }}>●</span> Detection Feed
-                </div>
-                <AlertFeed alerts={alerts} colors={colors} isDark={isDark} />
+              <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: colors.primary }}>●</span> Detection Feed
+              </div>
+              <AlertFeed alerts={alerts} colors={colors} isDark={isDark} />
             </div>
             
+            {/* Summary */}
             <div style={{ 
-                background: colors.cardBg, borderRadius: 28, padding: 28, 
-                border: `1px solid ${colors.border}`, boxShadow: colors.shadow 
+              background: colors.cardBg, borderRadius: 28, padding: 28, 
+              border: `1px solid ${colors.border}`, boxShadow: colors.shadow 
             }}>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>📊</span> Behavioral Summary
-                </div>
-                <AlertSummary alerts={alerts} colors={colors} isDark={isDark} />
+              <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 20 }}>📊</span> Behavioral Summary
+              </div>
+              <AlertSummary alerts={alerts} colors={colors} isDark={isDark} />
             </div>
           </div>
         </div>
