@@ -205,7 +205,7 @@ audio_alert_timer = 0
 
 start_api_session("Kanika")
 import webbrowser
-dashboard_url = f"http://localhost:5173?session={SESSION_ID}"
+dashboard_url = f"https://ai-proctoring-system-sigma.vercel.app?session={SESSION_ID}"
 print(f"🔗 Opening dashboard: {dashboard_url}")
 webbrowser.open(dashboard_url)
 print("✅ Camera started! Press Q to quit\n")
