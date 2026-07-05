@@ -3,7 +3,7 @@ import AlertFeed from "./components/AlertFeed"
 import StatusBar from "./components/StatusBar"
 import AlertSummary from "./components/AlertSummary"
 
-const API_URL = "http://localhost:8000"
+const API_URL = "https://ai-proctoring-system-qpmj.onrender.com"
 
 export default function App() {
   const [sessionId, setSessionId] = useState(null)
@@ -48,7 +48,7 @@ export default function App() {
 
   const connectWebSocket = (sid) => {
       console.log("Connecting to WebSocket with session:", sid)
-      const socket = new WebSocket(`ws://localhost:8000/ws/${sid}`)
+      const socket = new WebSocket(`wss://ai-proctoring-system-qpmj.onrender.com/ws/${sid}`)
       socket.onopen = () => console.log("✅ WebSocket connected!")
       socket.onmessage = (e) => {
           console.log("📨 Message received:", e.data)
