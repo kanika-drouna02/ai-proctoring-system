@@ -3,6 +3,7 @@ import AlertFeed from "./components/AlertFeed"
 import StatusBar from "./components/StatusBar"
 import AlertSummary from "./components/AlertSummary"
 import BrowserDetector from "./components/BrowserDetector"
+import PhoneDetector from "./components/PhoneDetector"
 
 const API_URL = "https://ai-proctoring-system-qpmj.onrender.com"
 
@@ -289,6 +290,7 @@ export default function App() {
                     <div style={{ fontSize: 11, color: colors.primary, fontWeight: 700, fontFamily: "monospace" }}>SESSION ID: {sessionId?.slice(0,12)}...</div>
                 </div>
             </div>
+            
 
             <button
                 onClick={stopSession}
@@ -330,9 +332,23 @@ export default function App() {
               border: `1px solid ${colors.border}`, boxShadow: colors.shadow, minHeight: 600
             }}>
               <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ color: colors.primary }}>●</span> Detection Feed
+                <span style={{ color: colors.primary ,marginBottom: 20}}>●</span> Detection Feed
               </div>
               <AlertFeed alerts={alerts} colors={colors} isDark={isDark} />
+              <PhoneDetector
+              onPhoneDetected={() => {
+                const alert = {
+                  type: "PHONE_DETECTED",
+                  severity: "HIGH",
+                  timestamp_human: new Date().toLocaleTimeString()
+                }
+                setAlerts(prev => [alert, ...prev].slice(0, 100))
+                fetch(`${API_URL}/session/${manualSessionId || sessionId}/broadcast?alert_type=PHONE_DETECTED&severity=HIGH`, {
+                  method: "POST"
+                })
+              }}
+              colors={colors}
+            />
             </div>
             
             {/* Summary */}
@@ -343,6 +359,7 @@ export default function App() {
               <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 20 }}>📊</span> Behavioral Summary
               </div>
+              
               <AlertSummary alerts={alerts} colors={colors} isDark={isDark} />
             </div>
           </div>

@@ -6,6 +6,7 @@ export default function BrowserDetector({ sessionId, apiUrl, onAlert, colors }) 
   const canvasRef = useRef(null)
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [status, setStatus] = useState("Loading models...")
+  const [cocoModel, setCocoModel] = useState(null)
   const [stats, setStats] = useState({
     faces: 0,
     gaze: "OK",
@@ -15,17 +16,27 @@ export default function BrowserDetector({ sessionId, apiUrl, onAlert, colors }) 
   // Load face-api models
   useEffect(() => {
     const loadModels = async () => {
-      try {
-        setStatus("Loading AI models...")
-        await faceapi.nets.tinyFaceDetector.loadFromUri("/models")
-        await faceapi.nets.faceLandmark68Net.loadFromUri("/models")
-        setModelsLoaded(true)
-        setStatus("Models loaded! Starting camera...")
-        startCamera()
-      } catch (err) {
-        setStatus("Error loading models: " + err.message)
-        console.error(err)
-      }
+        try {
+            await tf.ready() 
+            setStatus("Loading AI models...")
+            
+            // Load COCO-SSD FIRST
+            setStatus("Loading object detection model...")
+            const coco = await cocoSsd.load()
+            setCocoModel(coco)
+            
+            // Then load face-api models
+            setStatus("Loading face detection model...")
+            await faceapi.nets.tinyFaceDetector.loadFromUri("/models")
+            await faceapi.nets.faceLandmark68Net.loadFromUri("/models")
+            
+            setModelsLoaded(true)
+            setStatus("Models loaded! Starting camera...")
+            startCamera()
+        } catch (err) {
+            setStatus("Error loading models: " + err.message)
+            console.error(err)
+        }
     }
     loadModels()
   }, [])
@@ -52,6 +63,7 @@ export default function BrowserDetector({ sessionId, apiUrl, onAlert, colors }) 
     let lastFaceAlert = 0
     let lastGazeAlert = 0
     let lookingAwayFrames = 0
+    let lastPhoneAlert = 0
     const COOLDOWN = 3000
 
     const detect = async () => {
@@ -138,6 +150,44 @@ export default function BrowserDetector({ sessionId, apiUrl, onAlert, colors }) 
         lookingAwayFrames = 0
       }
 
+
+      // ── PHONE DETECTION ──
+      if (cocoModel && videoRef.current) {
+          const predictions = await cocoModel.detect(videoRef.current)
+          const phones = predictions.filter(p => 
+              p.class === "cell phone" && p.score > 0.5
+          )
+
+          if (phones.length > 0) {
+              // Draw phone boxes
+              phones.forEach(phone => {
+                  const [x, y, width, height] = phone.bbox
+                  ctx.strokeStyle = "#FF4444"
+                  ctx.lineWidth = 2
+                  ctx.strokeRect(x, y, width, height)
+
+                  // Label
+                  ctx.fillStyle = "#FF4444"
+                  ctx.fillRect(x, y - 25, 140, 25)
+                  ctx.fillStyle = "#FFFFFF"
+                  ctx.font = "14px monospace"
+                  ctx.fillText(`PHONE ${Math.round(phone.score * 100)}%`, x + 5, y - 7)
+              })
+
+              // Alert
+              if (now - lastPhoneAlert > COOLDOWN) {
+                  const alert = {
+                      type: "PHONE_DETECTED",
+                      severity: "HIGH",
+                      timestamp_human: new Date().toLocaleTimeString()
+                  }
+                  onAlert(alert)
+                  sendAlert("PHONE_DETECTED", "HIGH")
+                  lastPhoneAlert = now
+              }
+          }
+      }
+
       // Update stats
       setStats({
         faces: faceCount,
@@ -148,7 +198,7 @@ export default function BrowserDetector({ sessionId, apiUrl, onAlert, colors }) 
 
     const interval = setInterval(detect, 300)
     return () => clearInterval(interval)
-  }, [modelsLoaded])
+  }, [modelsLoaded, cocoModel])
 
   const sendAlert = async (alertType, severity) => {
     if (!sessionId) return
